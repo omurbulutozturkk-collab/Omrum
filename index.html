@@ -203,13 +203,16 @@
     #weapon-container {
       position: absolute;
       bottom: 0;
-      right: 4%;
-      width: 430px;
-      height: 265px;
+      /* Dipçiği ekran dışına it, namlu ortaya baksın */
+      right: -6%;
+      /* Responsive genişlik: büyük ekranda 430px, küçükte %52 */
+      width: min(430px, 52vw);
+      height: min(265px, calc(52vw * 265 / 430));
       z-index: 40;
       pointer-events: none;
       transition: transform 0.2s ease-out;
       display: none;
+      /* Pivot: sağ-alt köşe (kabza bölgesi) */
       transform-origin: bottom right;
     }
 
@@ -218,6 +221,8 @@
       height: 100%;
       position: relative;
       transition: transform 0.05s linear;
+      /* Pivot kabza bölgesinden dönsün (sağ-alt köşe) */
+      transform-origin: bottom right;
     }
 
     #joyBox {
@@ -873,9 +878,10 @@
     <div id="weapon">
 
       <svg viewBox="0 0 430 265" xmlns="http://www.w3.org/2000/svg"
-           width="430" height="265"
+           width="100%" height="100%"
            style="position:absolute;bottom:0;right:0;overflow:visible;
-                  filter:drop-shadow(0 14px 24px rgba(0,0,0,0.98))">
+                  filter:drop-shadow(0 14px 24px rgba(0,0,0,0.98))"
+           preserveAspectRatio="xMaxYMax meet">
         <defs>
 
           <linearGradient id="gM" x1="0" y1="0" x2="0" y2="1">
@@ -1679,7 +1685,7 @@
       flash.style.opacity = "1";
       setTimeout(() => flash.style.opacity = "0", 30);
       const wpn = document.getElementById("weapon");
-      wpn.style.transform = "translateY(12px) rotate(-2deg) scale(0.97)";
+      wpn.style.transform = "translateY(10px) rotate(-3deg)";
       setTimeout(() => wpn.style.transform = "", 70);
       const w = canvas.width,
         h = canvas.height,
