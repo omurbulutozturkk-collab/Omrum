@@ -144,6 +144,21 @@
       display: none;
     }
 
+    .dmg-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: 14px solid transparent;
+      border-top-color: rgba(255, 30, 30, 0.88);
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 61;
+      transition: opacity 0.6s;
+    }
+
     #crosshair {
       position: absolute;
       top: 50%;
@@ -1182,6 +1197,18 @@
       setTimeout(() => skull.remove(), 1200);
     }
 
+    function showDamageIndicator(fromX, fromY) {
+      let rel = Math.atan2(fromY - player.y, fromX - player.x) - player.angle;
+      const el = document.createElement("div");
+      el.className = "dmg-indicator";
+      el.style.transform = `translate(-50%, -50%) rotate(${rel * 180 / Math.PI}deg)`;
+      document.body.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        setTimeout(() => el.remove(), 600);
+      }, 1200);
+    }
+
     function addKillfeed() {
       const feed = document.getElementById("killfeed");
       const entry = document.createElement("div");
@@ -1869,6 +1896,7 @@
               } else player.hp -= botDmg;
               updateHUD();
               playSound(100, 'square', 0.2, 0.3);
+              showDamageIndicator(en.x, en.y);
               const dmgEl = document.getElementById("damageOverlay");
               dmgEl.style.display = "block";
               dmgEl.style.opacity = "1";
