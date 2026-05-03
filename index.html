@@ -1614,6 +1614,7 @@
 
       player.ammo = getMaxAmmo();
       roundEndPending = false;
+      player.reloading = false; // <--- HATA DÜZELTMESİ: Yeni round başlarken reload durumunu sıfırla
 
       updateHUD();
       document.getElementById("killfeed").innerHTML = "";
