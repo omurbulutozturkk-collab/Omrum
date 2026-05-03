@@ -1235,6 +1235,8 @@
     };
     // ----------------------------------------------------------------
 
+    let reloadTimeout = null;  // <-- Zamanlayıcıyı takip etmek için eklendi
+
     function playSound(f, t, d, v) {
       if (audioCtx.state === 'suspended') return;
       const o = audioCtx.createOscillator(),
@@ -1595,10 +1597,17 @@
     }
 
     function startRound() {
+      // --- DÜZELTME: Devam eden şarjör animasyonunu iptal et ---
+      if (reloadTimeout) {
+        clearTimeout(reloadTimeout);
+        reloadTimeout = null;
+      }
+
       enemies = [];
       player.x = 1.5;
       player.y = 7.5;
       player.angle = 0;
+      player.vAngle = 0;                     // <-- Dikey açıyı sıfırla
       player.hp = 100;
 
       if (playerDiedThisRound) {
@@ -1614,7 +1623,12 @@
 
       player.ammo = getMaxAmmo();
       roundEndPending = false;
-      player.reloading = false; // <--- HATA DÜZELTMESİ: Yeni round başlarken reload durumunu sıfırla
+      player.reloading = false;              // <-- Şarjör durumunu sıfırla
+
+      // --- DÜZELTME: Silah kabının konumunu ve dönüşünü sıfırla ---
+      const container = document.getElementById("weapon-container");
+      container.style.transform = "translateY(0px)";
+      document.getElementById("weapon").style.transform = "";
 
       updateHUD();
       document.getElementById("killfeed").innerHTML = "";
@@ -1794,7 +1808,9 @@
       container.style.transform = "translateY(250px) rotate(10deg)";
 
       const reloadTime = player.weapon === 'sniper' ? 2000 : 1200;
-      setTimeout(() => {
+      // Zamanlayıcıyı sakla
+      reloadTimeout = setTimeout(() => {
+        reloadTimeout = null;
         if (gameState !== "playing") return;
         player.ammo = getMaxAmmo();
         updateHUD();
