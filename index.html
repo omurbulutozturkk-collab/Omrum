@@ -756,6 +756,53 @@
     .death-btn-primary:active {
       background: #ffa020;
     }
+
+    #victoryScreen {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 15, 5, 0.97);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .victory-title {
+      font-size: 62px;
+      font-weight: 900;
+      color: #2ecc71;
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      text-shadow: 0 0 35px rgba(46, 204, 113, 0.7), 0 0 70px rgba(46, 204, 113, 0.3);
+      margin-bottom: 8px;
+    }
+
+    .victory-sub {
+      font-size: 16px;
+      color: rgba(46, 204, 113, 0.65);
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+
+    #scoreBoard {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 140, 0, 0.35);
+      border-radius: 5px;
+      padding: 5px 18px;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      z-index: 55;
+      pointer-events: none;
+      display: none;
+      white-space: nowrap;
+    }
   </style>
 </head>
 
@@ -845,6 +892,27 @@
           <div class="death-stat-label">ÖLDÜRME</div>
           <div class="death-stat-val" id="stat-kills">0</div>
         </div>
+        <div class="death-stat-item">
+          <div class="death-stat-label">SKOR</div>
+          <div class="death-stat-val" id="stat-score" style="color:#ccc;font-size:22px;letter-spacing:1px;">0–0</div>
+        </div>
+      </div>
+    </div>
+    <div class="death-btn-row">
+      <button class="death-btn death-btn-primary" ontouchstart="continueAfterDeath();event.preventDefault();" onclick="continueAfterDeath()">DEVAM</button>
+      <button class="death-btn" ontouchstart="goMainMenu();event.preventDefault();" onclick="goMainMenu()">ANA MENÜ</button>
+    </div>
+  </div>
+
+  <div id="victoryScreen">
+    <div class="victory-title">ZAFER</div>
+    <div class="victory-sub">ŞAMPİYON SENSİN!</div>
+    <div class="death-stats-box">
+      <div class="death-stat-row">
+        <div class="death-stat-item">
+          <div class="death-stat-label">ÖLDÜRME</div>
+          <div class="death-stat-val" id="victory-kills">0</div>
+        </div>
       </div>
     </div>
     <div class="death-btn-row">
@@ -855,6 +923,7 @@
 
   <div id="damageOverlay"></div>
   <div id="roundBanner"></div>
+  <div id="scoreBoard"><span id="score-player" style="color:#ff8c00;">0</span><span style="color:#555;font-size:14px;margin:0 10px;">—</span><span id="score-bot" style="color:#ff3344;">0</span></div>
 
   <div id="hud">
     <div id="hud-tl">
@@ -1139,13 +1208,17 @@
 
     let roundEndPending = false;
     let autoFireInterval = null;
+    let playerWins = 0;
+    let botWins = 0;
+    let playerDiedThisRound = false;
 
     // --- EKLENEN KISIM: OYUN DENGELEME (BALANCING) YAPILANDIRMASI ---
     const GAME_CONFIG = {
       economy: {
         startMoney: 800,
-        killReward: 200,    // Eski 300'dü, zorlaştırdık
-        roundBonus: 1000    // Eski 3000'di, dengeledik
+        killReward: 200,
+        roundBonus: 1000,
+        lossBonus: 500
       },
       weapons: {
         classic:    { damage: 20, price: 0,    ammo: 30 },
@@ -1270,6 +1343,12 @@
       if (roundEndPending) return;
       if (enemies.filter(e => e.alive).length === 0) {
         roundEndPending = true;
+        playerWins++;
+        updateScoreBoard();
+        if (playerWins >= 13) {
+          showVictory();
+          return;
+        }
         player.round++;
         setTimeout(startRound, 2000);
       }
@@ -1282,6 +1361,31 @@
       document.getElementById("ammo-val").innerText = player.ammo;
       document.getElementById("round-val").innerText = player.round;
       document.getElementById("kill-val").innerText = player.totalKills;
+    }
+
+    function updateScoreBoard() {
+      document.getElementById("score-player").innerText = playerWins;
+      document.getElementById("score-bot").innerText = botWins;
+    }
+
+    function showVictory() {
+      gameState = "dead";
+      isFiring = false;
+      document.getElementById("victory-kills").innerText = player.totalKills;
+      document.getElementById("victoryScreen").style.display = "flex";
+      toggleUI(false);
+      document.getElementById("shopBtn").style.display = "none";
+      toggleShop(false);
+    }
+
+    function continueAfterDeath() {
+      if (botWins >= 13) { startGame(); return; }
+      document.getElementById("deathScreen").style.display = "none";
+      player.round++;
+      gameState = "playing";
+      toggleUI(true);
+      startRound();
+      loop();
     }
 
     function updateShopUI() {
@@ -1418,6 +1522,7 @@
       document.getElementById("reloadBtn").style.display = show ? "flex" : "none";
       document.getElementById("crosshair").style.display = show ? "block" : "none";
       document.getElementById("weapon-container").style.display = show ? "block" : "none";
+      document.getElementById("scoreBoard").style.display = show ? "block" : "none";
       document.getElementById("shopBtn").style.display = "none";
     }
 
@@ -1425,6 +1530,7 @@
       if (audioCtx.state === 'suspended') audioCtx.resume();
       document.getElementById("mainMenu").style.display = "none";
       document.getElementById("deathScreen").style.display = "none";
+      document.getElementById("victoryScreen").style.display = "none";
       player.round = 1;
       player.money = GAME_CONFIG.economy.startMoney;
       player.weapon = 'classic';
@@ -1434,6 +1540,10 @@
       player.regenArmor = false;
       player.ownedWeapons = new Set(['classic']);
       roundEndPending = false;
+      playerWins = 0;
+      botWins = 0;
+      playerDiedThisRound = false;
+      updateScoreBoard();
 
       gameState = "playing";
       toggleUI(true);
@@ -1444,8 +1554,12 @@
     function playerDie() {
       gameState = "dead";
       isFiring = false;
+      playerDiedThisRound = true;
+      botWins++;
+      updateScoreBoard();
       document.getElementById("stat-round").innerText = player.round;
       document.getElementById("stat-kills").innerText = player.totalKills;
+      document.getElementById("stat-score").innerText = playerWins + "–" + botWins;
       document.getElementById("deathScreen").style.display = "flex";
       toggleUI(false);
       document.getElementById("shopBtn").style.display = "none";
@@ -1454,6 +1568,7 @@
 
     function goMainMenu() {
       document.getElementById("deathScreen").style.display = "none";
+      document.getElementById("victoryScreen").style.display = "none";
       document.getElementById("mainMenu").style.display = "flex";
       gameState = "menu";
     }
@@ -1485,13 +1600,24 @@
       player.y = 7.5;
       player.angle = 0;
       player.hp = 100;
+
+      if (playerDiedThisRound) {
+        player.money += GAME_CONFIG.economy.lossBonus;
+        player.weapon = 'classic';
+        player.armor = 0;
+        player.regenArmor = false;
+        player.ownedWeapons = new Set(['classic']);
+      } else if (player.round > 1) {
+        player.money += GAME_CONFIG.economy.roundBonus;
+      }
+      playerDiedThisRound = false;
+
       player.ammo = getMaxAmmo();
-      if (player.round > 1) player.money += GAME_CONFIG.economy.roundBonus;
       roundEndPending = false;
 
       updateHUD();
       document.getElementById("killfeed").innerHTML = "";
-      let numBots = player.round * 2;
+      let numBots = Math.min(14, Math.floor(2 + player.round * 1.2));
       let attempts = 0;
       while (enemies.length < numBots && attempts < 200) {
         let rx = Math.floor(Math.random() * 5) + 14;
