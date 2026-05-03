@@ -794,16 +794,16 @@
         <div class="shop-col">
           <div class="shop-section-label">⚔ SİLAHLAR</div>
           <div class="shop-item shop-item-weapon">
-            <div>Classic (Tekli)<br><span style="font-size:10px;color:#555">Hasar: 40 | Tekli | 30 mrm</span></div>
+            <div>Classic (Tekli)<br><span style="font-size:10px;color:#555">Hasar: 20 | Tekli | 30 mrm</span></div>
             <button id="btn-classic" class="buy-btn" onclick="buyItem('classic',0)">BEDAVA</button>
           </div>
           <div class="shop-item shop-item-weapon">
-            <div>Auto-Rifle<br><span style="font-size:10px;color:#555">Hasar: 30 | Taramalı | 30 mrm</span></div>
+            <div>Auto-Rifle<br><span style="font-size:10px;color:#555">Hasar: 35 | Taramalı | 30 mrm</span></div>
             <button id="btn-rifle" class="buy-btn" onclick="buyItem('rifle',2900)">$2900</button>
           </div>
           <div class="shop-item shop-item-weapon">
-            <div>Sniper (Tekli)<br><span style="font-size:10px;color:#555">Hasar: 80 | Tekli | 5 mrm</span></div>
-            <button id="btn-sniper" class="buy-btn" onclick="buyItem('sniper',3500)">$3500</button>
+            <div>Sniper (Tekli)<br><span style="font-size:10px;color:#555">Hasar: 100 | Tekli | 5 mrm</span></div>
+            <button id="btn-sniper" class="buy-btn" onclick="buyItem('sniper',4700)">$4700</button>
           </div>
           <div class="shop-item shop-item-weapon">
             <div>Heavy Rifle<br><span style="font-size:10px;color:#555">Hasar: 45 | Taramalı | 20 mrm</span></div>
@@ -1140,6 +1140,28 @@
     let roundEndPending = false;
     let autoFireInterval = null;
 
+    // --- EKLENEN KISIM: OYUN DENGELEME (BALANCING) YAPILANDIRMASI ---
+    const GAME_CONFIG = {
+      economy: {
+        startMoney: 800,
+        killReward: 200,    // Eski 300'dü, zorlaştırdık
+        roundBonus: 1000    // Eski 3000'di, dengeledik
+      },
+      weapons: {
+        classic:    { damage: 20, price: 0,    ammo: 30 },
+        rifle:      { damage: 35, price: 2900, ammo: 30 },
+        sniper:     { damage: 100, price: 4700, ammo: 5 },
+        heavyrifle: { damage: 45, price: 4200, ammo: 20 }
+      },
+      armor: {
+        absorptionRate: 0.5 // %50 Emilim
+      },
+      bot: {
+        damage: 20 // Düşman vurma hasarı
+      }
+    };
+    // ----------------------------------------------------------------
+
     function playSound(f, t, d, v) {
       if (audioCtx.state === 'suspended') return;
       const o = audioCtx.createOscillator(),
@@ -1206,7 +1228,7 @@
       const feed = document.getElementById("killfeed");
       const entry = document.createElement("div");
       entry.className = "kf-entry";
-      entry.textContent = "💀 BOT +$300";
+      entry.textContent = "💀 BOT +$" + GAME_CONFIG.economy.killReward;
       feed.prepend(entry);
       while (feed.children.length > 3) feed.lastChild.remove();
       setTimeout(() => {
@@ -1225,7 +1247,7 @@
       ammo: 30,
       round: 1,
       reloading: false,
-      money: 800,
+      money: GAME_CONFIG.economy.startMoney,
       weapon: 'classic',
       totalKills: 0,
       regenArmor: false,
@@ -1239,9 +1261,9 @@
     let lastFireTime = 0;
 
     function getMaxAmmo() {
-      if (player.weapon === 'sniper') return 5;
-      if (player.weapon === 'heavyrifle') return 20;
-      return 30;
+      if (player.weapon === 'sniper') return GAME_CONFIG.weapons.sniper.ammo;
+      if (player.weapon === 'heavyrifle') return GAME_CONFIG.weapons.heavyrifle.ammo;
+      return GAME_CONFIG.weapons.classic.ammo;
     }
 
     function tryEndRound() {
@@ -1288,8 +1310,8 @@
       } else if (player.ownedWeapons.has('sniper')) {
         bSniper.innerText = "KUŞAN"; bSniper.style.background = "#888";
       } else {
-        bSniper.innerText = "$3500";
-        bSniper.style.background = player.money >= 3500 ? "#ff8c00" : "#c0392b";
+        bSniper.innerText = "$4700";
+        bSniper.style.background = player.money >= 4700 ? "#ff8c00" : "#c0392b";
       }
 
       const bHeavyRifle = document.getElementById("btn-heavyrifle");
@@ -1404,7 +1426,7 @@
       document.getElementById("mainMenu").style.display = "none";
       document.getElementById("deathScreen").style.display = "none";
       player.round = 1;
-      player.money = 800;
+      player.money = GAME_CONFIG.economy.startMoney;
       player.weapon = 'classic';
       player.armor = 0;
       player.totalKills = 0;
@@ -1464,7 +1486,7 @@
       player.angle = 0;
       player.hp = 100;
       player.ammo = getMaxAmmo();
-      if (player.round > 1) player.money += 3000;
+      if (player.round > 1) player.money += GAME_CONFIG.economy.roundBonus;
       roundEndPending = false;
 
       updateHUD();
@@ -1669,10 +1691,10 @@
       }
 
       let dmg;
-      if (player.weapon === 'rifle')      dmg = 30;
-      else if (player.weapon === 'sniper') dmg = 80;
-      else if (player.weapon === 'heavyrifle') dmg = 45;
-      else                                dmg = 40;
+      if (player.weapon === 'rifle')      dmg = GAME_CONFIG.weapons.rifle.damage;
+      else if (player.weapon === 'sniper') dmg = GAME_CONFIG.weapons.sniper.damage;
+      else if (player.weapon === 'heavyrifle') dmg = GAME_CONFIG.weapons.heavyrifle.damage;
+      else                                dmg = GAME_CONFIG.weapons.classic.damage;
 
       player.ammo--;
       updateHUD();
@@ -1698,7 +1720,7 @@
           en.wanderAngle = Math.atan2(player.y - en.y, player.x - en.x);
           if (en.hp <= 0) {
             en.alive = false;
-            player.money += 300;
+            player.money += GAME_CONFIG.economy.killReward;
             player.totalKills++;
 
             if (player.regenArmor) {
@@ -1847,15 +1869,26 @@
             if (map[Math.floor(nextY + (moveDY > 0 ? buf : -buf))][Math.floor(en.x)] === 0) en.y = nextY;
             if (now - en.seenTime > 400 && now - en.lastShot > 2000) {
               en.lastShot = now;
-              let botDmg = 15;
+              
+              let botDmg = GAME_CONFIG.bot.damage;
               if (player.armor > 0) {
-                if (player.armor >= botDmg) player.armor -= botDmg;
-                else {
-                  let diff = botDmg - player.armor;
+                let armorDamage = botDmg * GAME_CONFIG.armor.absorptionRate;
+                let hpDamage = botDmg - armorDamage;
+                
+                if (player.armor >= armorDamage) {
+                  player.armor -= armorDamage;
+                  player.hp -= hpDamage;
+                } else {
+                  let remainingDamage = armorDamage - player.armor;
                   player.armor = 0;
-                  player.hp -= diff;
+                  player.hp -= (hpDamage + remainingDamage);
                 }
-              } else player.hp -= botDmg;
+              } else {
+                player.hp -= botDmg;
+              }
+              player.armor = Math.max(0, Math.floor(player.armor));
+              player.hp = Math.max(0, Math.floor(player.hp));
+
               updateHUD();
               playSound(100, 'square', 0.2, 0.3);
               showDamageIndicator(en.x, en.y);
